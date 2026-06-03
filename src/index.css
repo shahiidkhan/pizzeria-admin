@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --border: #e2e8f0;
+    --sidebar-bg: #ffffff;
+    --sidebar-border: #e2e8f0;
+    --sidebar-text: #475569;
+    --sidebar-active: #f97316;
+    --sidebar-hover: #f1f5f9;
+    --card-bg: #ffffff;
+    --input-bg: #ffffff;
+    --input-border: #e2e8f0;
+  }
+
+  .dark {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #172032;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --border: #334155;
+    --sidebar-bg: #020617;
+    --sidebar-border: #1e293b;
+    --sidebar-text: #94a3b8;
+    --sidebar-active: #f97316;
+    --sidebar-hover: #0f172a;
+    --card-bg: #1e293b;
+    --input-bg: #1e293b;
+    --input-border: #334155;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border bg-[var(--card-bg)] border-[var(--border)] shadow-card;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-500 text-white font-medium text-sm
+           hover:bg-brand-600 active:scale-95 transition-all duration-150 shadow-sm;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--border)]
+           bg-[var(--card-bg)] text-[var(--text-primary)] font-medium text-sm
+           hover:bg-[var(--bg-tertiary)] active:scale-95 transition-all duration-150;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 text-white font-medium text-sm
+           hover:bg-red-600 active:scale-95 transition-all duration-150 shadow-sm;
+  }
+
+  .input-field {
+    @apply w-full px-3 py-2 rounded-lg border border-[var(--input-border)] bg-[var(--input-bg)]
+           text-[var(--text-primary)] text-sm placeholder:text-[var(--text-muted)]
+           focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500
+           transition-all duration-150;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-[var(--text-secondary)] mb-1.5;
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+           text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] hover:text-white
+           transition-all duration-150 cursor-pointer select-none;
+  }
+
+  .sidebar-link.active {
+    @apply bg-brand-500/10 text-brand-400 border border-brand-500/20;
+  }
+
+  .page-title {
+    @apply text-xl font-bold text-[var(--text-primary)];
+  }
+
+  .section-title {
+    @apply text-base font-semibold text-[var(--text-primary)];
+  }
+
+  .text-muted {
+    @apply text-[var(--text-muted)] text-sm;
+  }
+
+  .divider {
+    @apply border-t border-[var(--border)];
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  .animate-slide-in {
+    animation: slideIn 0.25s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+}
