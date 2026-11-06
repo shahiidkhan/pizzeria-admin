@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Menu, Search, Bell, ChevronDown, MapPin, Check, Loader2 } from 'lucide-react';
+import { Menu, Search, Bell, ChevronDown, MapPin, Check, Loader2, BellRing } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { useNotifications } from '../../hooks/useNotifications';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { useBranches } from '../../hooks/useBranches';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import ThemeToggle from '../common/ThemeToggle';
@@ -38,15 +38,27 @@ function formatRelativeTime(value) {
   return `${Math.floor(diffHours / 24)} day ago`;
 }
 
-export default function Navbar({ onToggleMobile, admin }) {
+function formatBadgeCount(count) {
+  return count > 99 ? '99+' : count;
+}
+
+export default function Navbar({
+  onToggleMobile,
+  admin,
+  notifications = [],
+  unreadCount = 0,
+  markAsRead,
+  acknowledgeBellNotifications,
+}) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, loggingOut } = useAuth();
+  const { user, logout, loggingOut } = useAuth();
   const [branchOpen, setBranchOpen] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications({ userId: 'admin' });
+  const notificationRef = useRef(null);
+  const push = usePushNotifications(admin, user);
   const { branches } = useBranches();
 
   const title = Object.entries(PAGE_TITLES).find(([path]) =>
@@ -67,6 +79,30 @@ export default function Navbar({ onToggleMobile, admin }) {
     setProfileOpen(false);
     navigate(path);
   };
+
+  useEffect(() => {
+    if (!notifOpen) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!notificationRef.current?.contains(event.target)) {
+        setNotifOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setNotifOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [notifOpen]);
 
   const handleLogout = async () => {
     setProfileOpen(false);
@@ -135,41 +171,75 @@ export default function Navbar({ onToggleMobile, admin }) {
 
       <ThemeToggle />
 
-      <div className="relative">
+      <div className="relative" ref={notificationRef}>
         <button
           onClick={() => {
-            setNotifOpen((o) => !o);
+            const nextOpen = !notifOpen;
+            setNotifOpen(nextOpen);
             setBranchOpen(false);
             setProfileOpen(false);
+            if (nextOpen && unreadCount > 0) {
+              acknowledgeBellNotifications?.();
+            }
           }}
           className="relative p-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] transition-all"
+          aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
         >
           <Bell size={18} />
-          {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-500 rounded-full" />}
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-brand-500 text-white text-[10px] font-bold leading-5 text-center shadow-sm">
+              {formatBadgeCount(unreadCount)}
+            </span>
+          )}
         </button>
         {notifOpen && (
-          <div className="absolute right-0 top-11 w-72 bg-[var(--card-bg)] border border-[var(--border)] rounded-xl shadow-card-lg z-50 animate-fade-in overflow-hidden">
+          <div className="absolute right-0 top-11 w-72 max-h-[min(28rem,calc(100vh-5rem))] bg-[var(--card-bg)] border border-[var(--border)] rounded-xl shadow-card-lg z-50 animate-fade-in overflow-y-auto">
             <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between">
               <span className="font-semibold text-sm text-[var(--text-primary)]">Notifications</span>
               {unreadCount > 0 && (
-                <button onClick={markAllAsRead} className="badge bg-brand-500/10 text-brand-500">
+                <button onClick={() => acknowledgeBellNotifications?.()} className="badge bg-brand-500/10 text-brand-500">
                   {unreadCount} new
                 </button>
               )}
             </div>
+            {push.configured && push.permission !== 'granted' && (
+              <button
+                type="button"
+                onClick={push.enable}
+                disabled={push.enabling || push.permission === 'denied'}
+                className="w-full px-4 py-2.5 border-b border-[var(--border)] text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] disabled:text-[var(--text-muted)] disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              >
+                {push.enabling ? <Loader2 size={14} className="animate-spin" /> : <BellRing size={14} />}
+                {push.permission === 'denied' ? 'Push blocked in browser' : 'Enable push alerts'}
+              </button>
+            )}
+            {!push.configured && (
+              <div className="px-4 py-2.5 border-b border-[var(--border)] text-xs text-[var(--text-muted)]">
+                Add VITE_FIREBASE_VAPID_KEY to enable push alerts.
+              </div>
+            )}
             {orderedNotifications.length === 0 ? (
               <div className="px-4 py-6 text-sm text-[var(--text-muted)]">No notifications yet.</div>
             ) : (
               orderedNotifications.map((n) => (
                 <button
                   key={n.id}
-                  onClick={() => !n.read && markAsRead(n.id)}
+                  onClick={() => {
+                    if (!n.read) void markAsRead?.(n.id);
+                    if (n.route) {
+                      setNotifOpen(false);
+                      navigate(n.route);
+                    }
+                  }}
                   className={cn(
                     'w-full text-left px-4 py-3 border-b border-[var(--border)] last:border-0',
                     !n.read && 'bg-brand-500/5'
                   )}
                 >
-                  <p className="text-sm text-[var(--text-primary)]">{n.text || n.title || 'Notification'}</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{n.text || n.title || 'Notification'}</p>
+                  {n.message && (
+                    <p className="text-xs text-[var(--text-muted)] mt-1 line-clamp-2">{n.message}</p>
+                  )}
                   <p className="text-xs text-[var(--text-muted)] mt-0.5">{formatRelativeTime(n.createdAt)}</p>
                 </button>
               ))

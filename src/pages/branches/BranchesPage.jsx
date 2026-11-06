@@ -2,8 +2,9 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { MapPin, Phone, Plus, Save, X } from 'lucide-react';
+import { MapPin, Phone, Plus, Save, Trash2, X } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import FormToggle from '../../components/forms/FormToggle';
 import FormInput from '../../components/forms/FormInput';
 import FormSelect from '../../components/forms/FormSelect';
@@ -12,9 +13,12 @@ import { useBranches } from '../../hooks/useBranches';
 import { branchSchema } from '../../validations/branchSchema';
 
 export default function BranchesPage() {
-  const { branches, loading, error, addBranch, toggleStatus } = useBranches();
+  const { branches, loading, error, addBranch, toggleStatus, removeBranch } = useBranches();
   const [modalOpen, setModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(branchSchema),
@@ -47,6 +51,21 @@ export default function BranchesPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await removeBranch(deleteTarget.id);
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(err.message || 'Failed to delete branch.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (error) return <p className="text-red-400 p-6">Error loading branches: {error}</p>;
 
   return (
@@ -67,6 +86,8 @@ export default function BranchesPage() {
       ) : branches.length === 0 ? (
         <p className="text-sm text-[var(--text-muted)] text-center py-12">No branches configured yet.</p>
       ) : (
+        <>
+        {deleteError && <p className="text-sm text-red-400">{deleteError}</p>}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {branches.map(branch => {
             const isOpen = branch.status ? branch.status === 'open' : !!branch.isOpen;
@@ -96,7 +117,21 @@ export default function BranchesPage() {
                       </div>
                     </div>
                   </div>
-                  <FormToggle checked={isOpen} onChange={v => handleToggle(branch.id, v)} />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteError('');
+                        setDeleteTarget({ id: branch.id, location });
+                      }}
+                      className="p-2 rounded-lg text-[var(--text-muted)] hover:bg-red-500/10 hover:text-red-400 transition-all"
+                      aria-label={`Delete ${location}`}
+                      title="Delete branch"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    <FormToggle checked={isOpen} onChange={v => handleToggle(branch.id, v)} />
+                  </div>
                 </div>
 
                 <div className="space-y-2 pt-4 border-t border-[var(--border)]">
@@ -113,6 +148,7 @@ export default function BranchesPage() {
             );
           })}
         </div>
+        </>
       )}
 
       {modalOpen && (
@@ -148,6 +184,18 @@ export default function BranchesPage() {
           </form>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Branch"
+        message={`Are you sure you want to delete ${deleteTarget?.location || 'this branch'}? This action cannot be undone.`}
+        onConfirm={handleDelete}
+        onCancel={() => {
+          if (deleting) return;
+          setDeleteTarget(null);
+        }}
+        loading={deleting}
+      />
     </div>
   );
 }

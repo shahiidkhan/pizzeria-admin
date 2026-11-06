@@ -14,6 +14,7 @@ const ITEM_COLORS = {
   'Offers':      { color: 'red',    text: 'text-red-600 dark:text-red-400',         bg: 'bg-red-500/10 dark:bg-red-500/15',       border: 'border-red-500/20 dark:border-red-500/30' },
   'Menu':        { color: 'indigo', text: 'text-indigo-600 dark:text-indigo-400',   bg: 'bg-indigo-500/10 dark:bg-indigo-500/15', border: 'border-indigo-500/20 dark:border-indigo-500/30' },
   'Orders':      { color: 'cyan',   text: 'text-cyan-600 dark:text-cyan-400',       bg: 'bg-cyan-500/10 dark:bg-cyan-500/15',     border: 'border-cyan-500/20 dark:border-cyan-500/30' },
+  'Top Customers': { color: 'lime', text: 'text-lime-600 dark:text-lime-400',       bg: 'bg-lime-500/10 dark:bg-lime-500/15',     border: 'border-lime-500/20 dark:border-lime-500/30' },
   'Reviews':     { color: 'yellow', text: 'text-amber-600 dark:text-amber-400',     bg: 'bg-amber-500/10 dark:bg-amber-500/15',   border: 'border-amber-500/20 dark:border-amber-500/30' },
   'Branches':    { color: 'teal',   text: 'text-teal-600 dark:text-teal-400',       bg: 'bg-teal-500/10 dark:bg-teal-500/15',     border: 'border-teal-500/20 dark:border-teal-500/30' },
   'Admin Users': { color: 'pink',   text: 'text-pink-600 dark:text-pink-400',       bg: 'bg-pink-500/10 dark:bg-pink-500/15',     border: 'border-pink-500/20 dark:border-pink-500/30' },
@@ -39,6 +40,7 @@ const getNavItemClasses = (label, isActive) => {
     label === 'Offers'      && 'text-red-600/70 dark:text-red-400/60 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/5 dark:hover:bg-red-500/10',
     label === 'Menu'        && 'text-indigo-600/70 dark:text-indigo-400/60 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-500/5 dark:hover:bg-indigo-500/10',
     label === 'Orders'      && 'text-cyan-600/70 dark:text-cyan-400/60 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-500/5 dark:hover:bg-cyan-500/10',
+    label === 'Top Customers' && 'text-lime-600/70 dark:text-lime-400/60 hover:text-lime-600 dark:hover:text-lime-400 hover:bg-lime-500/5 dark:hover:bg-lime-500/10',
     label === 'Reviews'     && 'text-amber-600/70 dark:text-amber-400/60 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/5 dark:hover:bg-amber-500/10',
     label === 'Branches'    && 'text-teal-600/70 dark:text-teal-400/60 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-500/5 dark:hover:bg-teal-500/10',
     label === 'Admin Users' && 'text-pink-600/70 dark:text-pink-400/60 hover:text-pink-600 dark:hover:text-pink-400 hover:bg-pink-500/5 dark:hover:bg-pink-500/10',
@@ -46,7 +48,20 @@ const getNavItemClasses = (label, isActive) => {
   );
 };
 
-export default function Sidebar({ collapsed, mobileOpen, onToggleCollapse, onCloseMobile }) {
+function formatBadgeCount(count) {
+  return count > 99 ? '99+' : count;
+}
+
+export default function Sidebar({
+  collapsed,
+  mobileOpen,
+  onToggleCollapse,
+  onCloseMobile,
+  orderUnreadCount = 0,
+  reviewUnreadCount = 0,
+  onOrdersOpen,
+  onReviewsOpen,
+}) {
   const navigate = useNavigate();
   const { logout, loggingOut, logoutError, clearLogoutError } = useAuth();
 
@@ -60,16 +75,46 @@ export default function Sidebar({ collapsed, mobileOpen, onToggleCollapse, onClo
     }
   };
 
+  const handleNavClick = (item) => {
+    onCloseMobile?.();
+    if (item.label === 'Orders' && orderUnreadCount > 0) {
+      void onOrdersOpen?.();
+    }
+    if (item.label === 'Reviews' && reviewUnreadCount > 0) {
+      void onReviewsOpen?.();
+    }
+  };
+
   const NavItem = ({ item }) => {
     const Icon = item.icon;
+    const badgeCount = item.label === 'Orders'
+      ? orderUnreadCount
+      : item.label === 'Reviews'
+        ? reviewUnreadCount
+        : 0;
+    const badgeClass = item.label === 'Reviews' ? 'bg-amber-500' : 'bg-cyan-500';
+
     return (
       <NavLink
         to={item.path}
-        onClick={onCloseMobile}
+        onClick={() => handleNavClick(item)}
         className={({ isActive }) => getNavItemClasses(item.label, isActive)}
+        aria-label={badgeCount ? `${item.label}, ${badgeCount} new` : item.label}
       >
-        <Icon size={18} className="shrink-0" />
+        <span className="relative shrink-0">
+          <Icon size={18} className="shrink-0" />
+          {collapsed && badgeCount > 0 && (
+            <span className={cn('absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full text-white text-[9px] font-bold leading-4 text-center shadow-sm', badgeClass)}>
+              {formatBadgeCount(badgeCount)}
+            </span>
+          )}
+        </span>
         {!collapsed && <span className="truncate">{item.label}</span>}
+        {!collapsed && badgeCount > 0 && (
+          <span className={cn('ml-auto min-w-5 h-5 px-1.5 rounded-full text-white text-[10px] font-bold leading-5 text-center shadow-sm', badgeClass)}>
+            {formatBadgeCount(badgeCount)}
+          </span>
+        )}
       </NavLink>
     );
   };

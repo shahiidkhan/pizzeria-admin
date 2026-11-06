@@ -38,6 +38,9 @@ export default function AddOfferPage() {
         discountPercent,
         expiryDate: v.expiryDate,
         status: v.status,
+        productImage: selectedProduct?.imageUrl ?? selectedProduct?.image ?? '',
+        imageUrl: selectedProduct?.imageUrl ?? selectedProduct?.image ?? '',
+        image: selectedProduct?.imageUrl ?? selectedProduct?.image ?? '',
       });
       navigate('/offers');
     } catch (err) {

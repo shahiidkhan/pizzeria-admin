@@ -9,11 +9,13 @@ import FormInput from '../../components/forms/FormInput';
 import FormTextarea from '../../components/forms/FormTextarea';
 import ImageUpload from '../../components/forms/ImageUpload';
 import { categoryService } from '../../services/categoryService';
+import { storageService } from '../../services/storageService';
 import { categorySchema } from '../../validations/categorySchema';
 
 export default function AddCategoryPage() {
   const navigate = useNavigate();
-  const [imageUrl, setImageUrl]       = useState('');
+  const [imageFile, setImageFile]     = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [submitError, setSubmitError] = useState('');
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
@@ -23,15 +25,22 @@ export default function AddCategoryPage() {
   const onSubmit = async (values) => {
     setSubmitError('');
     try {
+      const imageUrl = imageFile
+        ? await storageService.uploadImage(imageFile, 'categories', setUploadProgress)
+        : '';
       await categoryService.add({
         ...values,
-        image:     imageUrl || '',
+        imageUrl:   imageUrl || '',
+        image:      imageUrl || '',
         isActive:  true,
         itemCount: 0,
       });
       navigate('/categories');
     } catch (err) {
-      setSubmitError(err.message ?? 'Failed to save category.');
+      const message = err.message ?? 'Failed to save category.';
+      console.error('Category save failed:', err?.code, err?.message, err);
+      setSubmitError(message);
+      alert(`Upload failed: ${message}`);
     }
   };
 
@@ -57,7 +66,10 @@ export default function AddCategoryPage() {
           <div className="space-y-5">
             <div className="card p-6">
               <h3 className="section-title mb-4">Category Image</h3>
-              <ImageUpload onChange={url => setImageUrl(url)} />
+              <ImageUpload onChange={file => setImageFile(file)} />
+              {uploadProgress > 0 && uploadProgress < 100 && (
+                <p className="text-xs text-[var(--text-muted)] mt-2">{uploadProgress}% uploaded</p>
+              )}
             </div>
             <div className="flex gap-3">
               <button type="button" onClick={() => navigate('/categories')} className="btn-secondary flex-1"><X size={16} /> Cancel</button>

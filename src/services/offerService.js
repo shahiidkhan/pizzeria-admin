@@ -8,6 +8,15 @@ import { db } from '../firebase/firebase';
 const COL = 'offers';
 const ref = () => collection(db, COL);
 
+function normalizeImagePayload(data) {
+  const imageUrl = data.imageUrl ?? data.image ?? data.productImage ?? '';
+  return {
+    ...data,
+    imageUrl,
+    image: imageUrl,
+  };
+}
+
 export const offerService = {
   async getAll() {
     const snap = await getDocs(query(ref(), orderBy('createdAt', 'desc')));
@@ -20,8 +29,9 @@ export const offerService = {
   },
 
   async add(data) {
+    const payload = normalizeImagePayload(data);
     const docRef = await addDoc(ref(), {
-      ...data,
+      ...payload,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -29,8 +39,9 @@ export const offerService = {
   },
 
   async update(id, data) {
+    const payload = normalizeImagePayload(data);
     await updateDoc(doc(db, COL, id), {
-      ...data,
+      ...payload,
       updatedAt: serverTimestamp(),
     });
   },

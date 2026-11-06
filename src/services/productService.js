@@ -8,6 +8,30 @@ import { db } from '../firebase/firebase';
 const COL = 'products';
 const ref = () => collection(db, COL);
 
+function normalizeProductPayload(data) {
+  const imageUrl = data.imageUrl ?? data.image ?? '';
+  const availability = data.availability ?? data.isAvailable ?? true;
+
+  return {
+    ...data,
+    imageUrl,
+    image: imageUrl,
+    availability,
+    isAvailable: availability,
+  };
+}
+
+async function verifyProductImageUrl(id) {
+  const snap = await getDoc(doc(db, COL, id));
+  if (!snap.exists()) throw new Error('Product was not found after saving.');
+
+  const data = snap.data();
+  if (!Object.prototype.hasOwnProperty.call(data, 'imageUrl')) {
+    throw new Error('Product saved, but Firestore document is missing imageUrl.');
+  }
+  return { id: snap.id, ...data };
+}
+
 export const productService = {
   /** One-time fetch – all products ordered by createdAt desc */
   async getAll() {
@@ -23,28 +47,25 @@ export const productService = {
 
   /** Add a new product */
   async add(data) {
+    const product = normalizeProductPayload(data);
     const docRef = await addDoc(ref(), {
-      ...data,
-      availability: data.availability ?? data.isAvailable ?? true,
-      isAvailable: data.isAvailable ?? data.availability ?? true,
+      ...product,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
+    await verifyProductImageUrl(docRef.id);
     return docRef.id;
   },
 
   /** Update an existing product */
   async update(id, data) {
+    const product = normalizeProductPayload(data);
     const payload = {
-      ...data,
+      ...product,
       updatedAt: serverTimestamp(),
     };
-    const availability = data.availability ?? data.isAvailable;
-    if (availability !== undefined) {
-      payload.availability = availability;
-      payload.isAvailable = availability;
-    }
     await updateDoc(doc(db, COL, id), payload);
+    await verifyProductImageUrl(id);
   },
 
   /** Delete a product */

@@ -25,5 +25,13 @@ export function useMenuUploads() {
     await menuService.uploadMenu(file, uploadedBy, onProgress);
   }, []);
 
-  return { uploads, loading, error, uploadMenu };
+  const setActiveUpload = useCallback(async (id) => {
+    await menuService.setActiveUpload(id);
+  }, []);
+
+  const removeUpload = useCallback(async (upload) => {
+    await menuService.removeUpload(upload);
+  }, []);
+
+  return { uploads, loading, error, uploadMenu, setActiveUpload, removeUpload };
 }

@@ -1,13 +1,26 @@
 // src/components/common/ConfirmDialog.jsx
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, Loader2, X } from 'lucide-react';
 
-export default function ConfirmDialog({ open, title = 'Confirm Action', message, onConfirm, onCancel, confirmLabel = 'Delete', variant = 'danger' }) {
+export default function ConfirmDialog({
+  open,
+  title = 'Confirm Action',
+  message,
+  onConfirm,
+  onCancel,
+  confirmLabel = 'Delete',
+  variant = 'danger',
+  loading = false,
+}) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={loading ? undefined : onCancel} />
       <div className="relative bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl shadow-card-lg p-6 w-full max-w-sm animate-fade-in">
-        <button onClick={onCancel} className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+        <button
+          onClick={onCancel}
+          disabled={loading}
+          className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
           <X size={18} />
         </button>
         <div className="flex items-start gap-4">
@@ -20,12 +33,13 @@ export default function ConfirmDialog({ open, title = 'Confirm Action', message,
           </div>
         </div>
         <div className="flex items-center justify-end gap-2 mt-6">
-          <button onClick={onCancel} className="btn-secondary text-sm">Cancel</button>
+          <button onClick={onCancel} disabled={loading} className="btn-secondary text-sm">Cancel</button>
           <button
             onClick={onConfirm}
+            disabled={loading}
             className={variant === 'danger' ? 'btn-danger text-sm' : 'btn-primary text-sm'}
           >
-            {confirmLabel}
+            {loading ? <Loader2 size={15} className="animate-spin" /> : confirmLabel}
           </button>
         </div>
       </div>

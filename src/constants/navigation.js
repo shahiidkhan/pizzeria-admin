@@ -1,7 +1,7 @@
 // src/constants/navigation.js
 import {
   LayoutDashboard, Package, Tag, Percent, Gift, UtensilsCrossed,
-  ShoppingCart, Star, MapPin, Users, Settings,
+  ShoppingCart, Star, MapPin, Users, Settings, Trophy,
 } from 'lucide-react';
 
 export const NAV_ITEMS = [
@@ -12,6 +12,7 @@ export const NAV_ITEMS = [
   { label: 'Offers',      path: '/offers',     icon: Percent },
   { label: 'Menu',        path: '/menu',       icon: UtensilsCrossed },
   { label: 'Orders',      path: '/orders',     icon: ShoppingCart },
+  { label: 'Top Customers', path: '/top-customers', icon: Trophy },
   { label: 'Reviews',     path: '/reviews',    icon: Star },
   { label: 'Branches',    path: '/branches',   icon: MapPin },
   { label: 'Admin Users', path: '/admins',     icon: Users },

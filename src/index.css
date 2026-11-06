@@ -53,6 +53,33 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  button,
+  [role='button'],
+  input[type='button'],
+  input[type='submit'],
+  input[type='reset'] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role='button'][aria-disabled='true'],
+  input[type='button']:disabled,
+  input[type='submit']:disabled,
+  input[type='reset']:disabled {
+    cursor: not-allowed;
+  }
+
+  button:focus-visible,
+  [role='button']:focus-visible,
+  a:focus-visible,
+  input[type='button']:focus-visible,
+  input[type='submit']:focus-visible,
+  input[type='reset']:focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.35);
+  }
+
   /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 5px;

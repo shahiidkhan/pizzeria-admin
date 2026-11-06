@@ -1,4 +1,5 @@
 import { Clock, DollarSign, Gift, MapPin, Package, ShoppingCart, Star } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import StatCard from '../../components/common/StatCard';
@@ -6,11 +7,13 @@ import StatusBadge from '../../components/common/StatusBadge';
 import MonthlyRevenueChart from '../../components/charts/MonthlyRevenueChart';
 import PopularProductsChart from '../../components/charts/PopularProductsChart';
 import WeeklySalesChart from '../../components/charts/WeeklySalesChart';
-import { useDashboardStats } from '../../hooks/useDashboardStats';
+import { DASHBOARD_PERIODS, useDashboardStats } from '../../hooks/useDashboardStats';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 export default function DashboardPage() {
-  const { stats, recentOrders, topProducts, branches, chartData, loading } = useDashboardStats();
+  const [period, setPeriod] = useState('all');
+  const { stats, recentOrders, topProducts, branches, chartData, loading } = useDashboardStats(period);
+  const selectedPeriod = DASHBOARD_PERIODS.find(item => item.value === period) ?? DASHBOARD_PERIODS[3];
 
   const openBranches = branches.filter(b => (b.status ? b.status === 'open' : !!b.isOpen)).length;
   const maxBranchOrders = Math.max(...branches.map(branch => branch.ordersToday ?? 0), 1);
@@ -21,14 +24,14 @@ export default function DashboardPage() {
       value: loading ? '-' : stats?.total?.toLocaleString() ?? '0',
       icon: ShoppingCart,
       color: 'brand',
-      subtitle: 'All time',
+      subtitle: selectedPeriod.subtitle,
     },
     {
       title: 'Total Revenue',
       value: loading ? '-' : formatCurrency(stats?.totalRevenue),
       icon: DollarSign,
       color: 'green',
-      subtitle: 'All time',
+      subtitle: selectedPeriod.subtitle,
     },
     {
       title: 'Total Products',
@@ -62,6 +65,27 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="page-title">Dashboard</h2>
+          <p className="text-sm text-[var(--text-muted)] mt-0.5">
+            Showing orders and revenue for {selectedPeriod.label.toLowerCase()}.
+          </p>
+        </div>
+        <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+          <span className="font-medium">Period</span>
+          <select
+            value={period}
+            onChange={event => setPeriod(event.target.value)}
+            className="input-field w-40 cursor-pointer"
+          >
+            {DASHBOARD_PERIODS.map(item => (
+              <option key={item.value} value={item.value}>{item.label}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {statCards.map(s => <StatCard key={s.title} {...s} />)}
       </div>

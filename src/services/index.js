@@ -14,4 +14,5 @@ export { menuService }     from './menuService';
 export { authService }     from './authService';
 export { settingsService } from './settingsService';
 export { notificationService } from './notificationService';
+export { pushNotificationService } from './pushNotificationService';
 export { storageService } from './storageService';

@@ -5,9 +5,13 @@ export function useNotifications(options = {}) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { userId, limitToUnread } = options;
+  const { userId, limitToUnread, enabled = true } = options;
 
   useEffect(() => {
+    if (!enabled) {
+      return undefined;
+    }
+
     const unsub = notificationService.subscribe(
       data => {
         setNotifications(data);
@@ -20,7 +24,7 @@ export function useNotifications(options = {}) {
       { userId, limitToUnread },
     );
     return () => unsub();
-  }, [userId, limitToUnread]);
+  }, [userId, limitToUnread, enabled]);
 
   const unreadCount = useMemo(
     () => notifications.reduce((count, n) => count + (n.read ? 0 : 1), 0),

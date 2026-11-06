@@ -24,6 +24,10 @@ function toMap(snapshot) {
   return Object.fromEntries(snapshot.docs.map(d => [d.id, { id: d.id, ...d.data() }]));
 }
 
+function uniqueById(items) {
+  return [...new Map(items.map(item => [item.id, item])).values()];
+}
+
 function isConfirmed(order) {
   return !!(order?.customerConfirmed || order?.confirmedDelivered);
 }
@@ -71,10 +75,7 @@ export const orderService = {
       payload.cancelledAt = serverTimestamp();
     }
 
-    await updateDoc(doc(db, COL, id), {
-      ...payload,
-    });
-    await notificationService.createOrderStatusNotification({ ...current, id }, status);
+    await updateDoc(doc(db, COL, id), payload);
   },
 
   async allowCancellation(id) {
@@ -116,7 +117,6 @@ export const orderService = {
       cancelledAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    await notificationService.createOrderStatusNotification({ ...order, id }, 'cancelled');
   },
 
   async confirmDelivery(id) {
@@ -131,7 +131,6 @@ export const orderService = {
       cancellationDeadline: null,
       updatedAt: serverTimestamp(),
     });
-    await notificationService.createDeliveryConfirmationNotification({ ...order, id });
   },
 
   async sendDueReviewRequest(id) {
@@ -155,7 +154,7 @@ export const orderService = {
   subscribe(callback) {
     const q = query(ref(), orderBy('createdAt', 'desc'));
     return onSnapshot(q, snap => {
-      callback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      callback(uniqueById(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     });
   },
 
@@ -170,14 +169,14 @@ export const orderService = {
 
     const emit = () => {
       if (!Object.values(state.ready).every(Boolean)) return;
-      callback(state.orders.map(order => enrichOrder(order, state)));
+      callback(uniqueById(state.orders.map(order => enrichOrder(order, state))));
     };
 
     const unsubscribers = [
       onSnapshot(
         query(ref(), orderBy('createdAt', 'desc')),
         snap => {
-          state.orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          state.orders = uniqueById(snap.docs.map(d => ({ id: d.id, ...d.data() })));
           state.ready.orders = true;
           emit();
         },

@@ -41,12 +41,16 @@ export default function AddProductPage() {
         ingredients: values.ingredients.split(',').map(s => s.trim()).filter(Boolean),
         availability: available,
         isAvailable: available,
+        imageUrl: imageUrl || '',
         image: imageUrl || '',
         rating: 0,
       });
       navigate('/products');
     } catch (err) {
-      setSubmitError(err.message ?? 'Failed to save product.');
+      const message = err.message ?? 'Failed to save product.';
+      console.error('Product save failed:', err?.code, err?.message, err);
+      setSubmitError(message);
+      alert(`Upload failed: ${message}`);
     }
   };
 

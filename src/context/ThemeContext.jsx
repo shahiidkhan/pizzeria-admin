@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 // src/context/ThemeContext.jsx
 import { createContext, useState, useEffect, useMemo, useCallback } from 'react';
 

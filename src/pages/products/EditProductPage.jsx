@@ -37,7 +37,7 @@ export default function EditProductPage() {
       if (p) {
         setProduct(p);
         setAvailable(p.isAvailable ?? p.availability ?? true);
-        setImageValue(p.image ?? '');
+        setImageValue(p.imageUrl ?? p.image ?? '');
         const categoryId = p.categoryId || categories.find(c => c.name === p.category)?.id || '';
         reset({
           name:        p.name,
@@ -64,11 +64,15 @@ export default function EditProductPage() {
         ingredients: values.ingredients.split(',').map(s => s.trim()).filter(Boolean),
         availability: available,
         isAvailable: available,
+        imageUrl,
         image: imageUrl,
       });
       navigate('/products');
     } catch (err) {
-      setSubmitError(err.message ?? 'Failed to update product.');
+      const message = err.message ?? 'Failed to update product.';
+      console.error('Product update failed:', err?.code, err?.message, err);
+      setSubmitError(message);
+      alert(`Upload failed: ${message}`);
     }
   };
 

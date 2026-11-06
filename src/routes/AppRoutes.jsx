@@ -22,6 +22,7 @@ import MenuPage        from '../pages/menu/MenuPage';
 
 import OrdersPage      from '../pages/orders/OrdersPage';
 import OrderDetailPage from '../pages/orders/OrderDetailPage';
+import TopCustomersPage from '../pages/customers/TopCustomersPage';
 
 import ReviewsPage     from '../pages/reviews/ReviewsPage';
 import BranchesPage    from '../pages/branches/BranchesPage';
@@ -55,6 +56,7 @@ export default function AppRoutes() {
 
         <Route path="/orders"               element={<OrdersPage />} />
         <Route path="/orders/:id"           element={<OrderDetailPage />} />
+        <Route path="/top-customers"        element={<TopCustomersPage />} />
 
         <Route path="/reviews"              element={<ReviewsPage />} />
         <Route path="/branches"             element={<BranchesPage />} />

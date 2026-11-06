@@ -6,13 +6,18 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
-import { collection, getDocs, limit, query, where } from 'firebase/firestore';
+import { collection, doc as firestoreDoc, getDoc, getDocs, limit, query, where } from 'firebase/firestore';
 import { auth, db } from '../firebase/firebase';
 
 const ADMINS_COL = 'admins';
 
 async function getAdminByUidOrEmail(user) {
   if (!user) return null;
+
+  const byIdSnap = await getDoc(firestoreDoc(db, ADMINS_COL, user.uid));
+  if (byIdSnap.exists()) {
+    return { id: byIdSnap.id, ...byIdSnap.data() };
+  }
 
   const byUidSnap = await getDocs(
     query(collection(db, ADMINS_COL), where('uid', '==', user.uid), limit(1))
@@ -56,4 +61,3 @@ export const authService = {
     await signOut(auth);
   },
 };
-

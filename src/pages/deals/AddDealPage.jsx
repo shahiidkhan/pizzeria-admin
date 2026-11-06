@@ -46,6 +46,8 @@ export default function AddDealPage() {
         products: selectedProducts,
         originalPrice: parseFloat(originalPrice.toFixed(2)),
         discount,
+        imageUrl: selectedObjs[0]?.imageUrl ?? selectedObjs[0]?.image ?? '',
+        image: selectedObjs[0]?.imageUrl ?? selectedObjs[0]?.image ?? '',
         isActive: true,
       });
       navigate('/deals');

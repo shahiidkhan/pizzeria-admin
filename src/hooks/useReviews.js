@@ -19,8 +19,20 @@ export function useReviews() {
   }, []);
 
   useEffect(() => {
-    queueMicrotask(() => { void fetchReviews(); });
-  }, [fetchReviews]);
+    const unsubscribe = reviewService.subscribe(
+      data => {
+        setReviews(data);
+        setError(null);
+        setLoading(false);
+      },
+      err => {
+        setError(err.message);
+        setLoading(false);
+      },
+    );
+
+    return () => unsubscribe();
+  }, []);
 
   const removeReview = useCallback(async (id) => {
     await reviewService.remove(id);

@@ -7,6 +7,7 @@ import {
   onSnapshot,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
   updateDoc,
   where,
@@ -17,13 +18,39 @@ import { db } from '../firebase/firebase';
 const COL = 'notifications';
 const ref = () => collection(db, COL);
 
+function notificationDocId(data) {
+  const entityId = data?.orderId || data?.reviewId;
+  if (!data?.userId || !entityId || !data?.type) return null;
+  return `${data.userId}_${entityId}_${data.type}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+}
+
+function normalizeNotificationPayload(data) {
+  const targetRole = data.targetRole ?? (data.userId === 'admin' ? 'admin' : 'customer');
+
+  return {
+    userId: data.userId ?? null,
+    targetRole,
+    orderId: data.orderId ?? null,
+    reviewId: data.reviewId ?? null,
+    productId: data.productId ?? null,
+    route: data.route ?? null,
+    type: data.type,
+    title: data.title,
+    message: data.message,
+    read: false,
+    createdAt: serverTimestamp(),
+  };
+}
+
 export const NOTIFICATION_TYPES = {
+  NEW_ORDER: 'new_order',
   PROCESSING: 'order_processing',
   ON_WAY: 'order_on_way',
   DELIVERED: 'order_delivered',
   CANCELLED: 'order_cancelled',
   RECEIVED_CONFIRMATION: 'order_received_confirmation',
   REVIEW_REQUEST: 'review_request',
+  NEW_REVIEW: 'new_review',
 };
 
 const STATUS_MESSAGES = {
@@ -48,16 +75,32 @@ export const notificationService = {
     );
   },
 
+  subscribeAdmin(callback, onError) {
+    const q = query(ref(), orderBy('createdAt', 'desc'), limit(100));
+
+    return onSnapshot(
+      q,
+      snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      onError
+    );
+  },
+
   async create(data) {
-    const docRef = await addDoc(ref(), {
-      userId: data.userId ?? null,
-      orderId: data.orderId ?? null,
-      type: data.type,
-      title: data.title,
-      message: data.message,
-      read: false,
-      createdAt: serverTimestamp(),
-    });
+    const payload = normalizeNotificationPayload(data);
+    const deterministicId = notificationDocId(payload);
+
+    if (deterministicId) {
+      const notificationRef = doc(db, COL, deterministicId);
+      const created = await runTransaction(db, async transaction => {
+        const existing = await transaction.get(notificationRef);
+        if (existing.exists()) return false;
+        transaction.set(notificationRef, payload);
+        return true;
+      });
+      return created ? notificationRef.id : null;
+    }
+
+    const docRef = await addDoc(ref(), payload);
     return docRef.id;
   },
 
@@ -74,6 +117,7 @@ export const notificationService = {
   async createDeliveryConfirmationNotification(order) {
     return this.create({
       userId: 'admin',
+      targetRole: 'admin',
       orderId: order.id,
       type: NOTIFICATION_TYPES.RECEIVED_CONFIRMATION,
       title: 'Delivery confirmed',
